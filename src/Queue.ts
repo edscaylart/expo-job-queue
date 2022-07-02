@@ -255,7 +255,7 @@ export class Queue {
     const activeMarkedJobs = await this.jobStore.getActiveMarkedJobs()
     activeMarkedJobs
       .filter((job) => job.workerName === workerName)
-      .map((job) => this.cancelJob(job.id))
+      .map((job) => this.cancelJob(job.id), this)
   }
 
   async removeAllJobsForWorker(workerName: string) {
@@ -263,15 +263,19 @@ export class Queue {
     await this.jobStore.removeJobsByWorkerName(workerName)
   }
 
-  private resetActiveJob = async (job: RawJob) => {
-    this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
-  }
+  // private resetActiveJob = async (job: RawJob) => {
+  //   this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
+  // }
 
   private async resetActiveJobs() {
     const activeMarkedJobs = await this.jobStore.getActiveMarkedJobs()
     // const resetTasks = activeMarkedJobs.map(this.resetActiveJob)
     // await Promise.all(resetTasks)
-    await Promise.all(activeMarkedJobs.map(async (job) => await this.resetActiveJob(job)))
+    await Promise.all(
+      activeMarkedJobs.map(async (job) => {
+        await this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
+      }, this),
+    )
   }
 
   private scheduleQueue() {
@@ -288,7 +292,9 @@ export class Queue {
       const nextJobs = await this.getJobsForWorker(nextJob.workerName)
       // const processingJobs = nextJobs.map(async (job) => this.limitExecution(this.executeJob, job))
       // await Promise.all(processingJobs)
-      await Promise.all(nextJobs.map(async (job) => this.limitExecution(this.executeJob, job)))
+      await Promise.all(
+        nextJobs.map(async (job) => this.limitExecution(this.executeJob, job), this),
+      )
     } else if (!this.isExecuting()) {
       this.finishQueue()
       return
