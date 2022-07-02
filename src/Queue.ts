@@ -269,8 +269,9 @@ export class Queue {
 
   private async resetActiveJobs() {
     const activeMarkedJobs = await this.jobStore.getActiveMarkedJobs()
-    const resetTasks = activeMarkedJobs.map(this.resetActiveJob)
-    await Promise.all(resetTasks)
+    // const resetTasks = activeMarkedJobs.map(this.resetActiveJob)
+    // await Promise.all(resetTasks)
+    await Promise.all(activeMarkedJobs.map(async (job) => await this.resetActiveJob(job)))
   }
 
   private scheduleQueue() {
@@ -285,8 +286,9 @@ export class Queue {
     const nextJob = await this.jobStore.getNextJob()
     if (this.isJobNotEmpty(nextJob)) {
       const nextJobs = await this.getJobsForWorker(nextJob.workerName)
-      const processingJobs = nextJobs.map(async (job) => this.limitExecution(this.excuteJob, job))
-      await Promise.all(processingJobs)
+      // const processingJobs = nextJobs.map(async (job) => this.limitExecution(this.executeJob, job))
+      // await Promise.all(processingJobs)
+      await Promise.all(nextJobs.map(async (job) => this.limitExecution(this.executeJob, job)))
     } else if (!this.isExecuting()) {
       this.finishQueue()
       return
@@ -382,7 +384,7 @@ export class Queue {
     return []
   }
 
-  private excuteJob = async (rawJob: RawJob) => {
+  private executeJob = async (rawJob: RawJob) => {
     const worker = this.workers[rawJob.workerName]
     const payload = JSON.parse(rawJob.payload)
     const job = { ...rawJob, ...{ payload } }
