@@ -267,15 +267,19 @@ export class Queue {
   //   this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
   // }
 
+  // private async resetActiveJobs() {
+  //   const activeMarkedJobs = await this.jobStore.getActiveMarkedJobs()
+  //   // const resetTasks = activeMarkedJobs.map(this.resetActiveJob)
+  //   // await Promise.all(resetTasks)
+  //   await Promise.all(
+  //     activeMarkedJobs.map(async (job) => {
+  //       await this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
+  //     }, this),
+  //   )
+  // }
+
   private async resetActiveJobs() {
-    const activeMarkedJobs = await this.jobStore.getActiveMarkedJobs()
-    // const resetTasks = activeMarkedJobs.map(this.resetActiveJob)
-    // await Promise.all(resetTasks)
-    await Promise.all(
-      activeMarkedJobs.map(async (job) => {
-        await this.jobStore.updateJob({ ...job, ...{ active: FALSE } })
-      }, this),
-    )
+    await this.jobStore.resetActiveJobs()
   }
 
   private scheduleQueue() {
@@ -408,7 +412,7 @@ export class Queue {
       worker.triggerSuccess(job)
 
       this.jobStore.removeJob(rawJob)
-    } catch (error) {
+    } catch (error: any) {
       worker.triggerFailure(job, error as Error)
       const { attempts } = rawJob
       let { errors, failedAttempts, retryIn } = JSON.parse(rawJob.metaData)
@@ -417,7 +421,11 @@ export class Queue {
       if (failedAttempts >= attempts) {
         failed = new Date().toISOString()
       }
-      const metaData = JSON.stringify({ errors: [...errors, error], failedAttempts, retryIn })
+      const metaData = JSON.stringify({
+        errors: [...errors, { name: error.name, message: error.message }],
+        failedAttempts,
+        retryIn,
+      })
       this.jobStore.updateJob({
         ...rawJob,
         ...{

@@ -1,5 +1,6 @@
 import * as SQLite from "expo-sqlite"
 import type { RawJob } from "./types"
+import { TRUE, FALSE } from "./types"
 
 const mapColumnsToJob = (row: Record<string, any>): RawJob => {
   return {
@@ -118,6 +119,10 @@ export class QueueStore {
       "UPDATE job SET active = ?, failed = ?, meta_data = ?, attempts = ?, scheduled_for = ? WHERE id = ?;",
       [job.active, job.failed, job.metaData, job.attempts, job.scheduled_for, job.id],
     )
+  }
+
+  async resetActiveJobs() {
+    await this.query("UPDATE job SET active = ?, failed = ? WHERE active = ?;", [FALSE, "", TRUE])
   }
 
   async addJob(job: RawJob) {

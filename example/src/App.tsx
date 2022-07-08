@@ -8,6 +8,7 @@ export default function App() {
 
   React.useEffect(() => {
     ExpoJobQueue.configure({
+      concurrency: 1,
       onQueueFinish: () => {
         console.log("Queue stopped and executed")
       },
