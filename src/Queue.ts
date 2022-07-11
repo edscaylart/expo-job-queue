@@ -9,6 +9,10 @@ import add from "date-fns/add"
  */
 export interface QueueOptions {
   /**
+   * A callback function which is called before the queue has been started
+   */
+  onQueueStart?: () => void
+  /**
    * A callback function which is called after the queue has been stopped
    * @parameter executedJobs
    */
@@ -83,6 +87,7 @@ export class Queue {
   private concurrency: number
   private updateInterval: number
   private maxFutureInterval: number
+  private onQueueStart: () => void
   private onQueueFinish: (executedJobs: Array<Job<any>>) => void
 
   private queuedJobExecuter: any[] = []
@@ -101,6 +106,7 @@ export class Queue {
 
     this.updateInterval = 10
     this.maxFutureInterval = 60 * 1000 // 60 seconds
+    this.onQueueStart = noop
     this.onQueueFinish = noop
     this.concurrency = -1
   }
@@ -128,11 +134,13 @@ export class Queue {
 
   configure(options: QueueOptions) {
     const {
+      onQueueStart = noop,
       onQueueFinish = noop,
       updateInterval = 10,
       concurrency = -1,
       futureInterval = 60 * 1000, // 60 seconds
     } = options
+    this.onQueueStart = onQueueStart
     this.onQueueFinish = onQueueFinish
     this.updateInterval = updateInterval
     this.maxFutureInterval = futureInterval
@@ -223,6 +231,7 @@ export class Queue {
    */
   async start() {
     if (!this.isActive) {
+      this.onQueueStart()
       this.isActive = true
       this.executedJobs = []
       await this.resetActiveJobs()
